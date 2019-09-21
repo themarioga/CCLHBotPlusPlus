@@ -10,6 +10,7 @@ Game::Game() : Room() {
 	this->n_cards_to_win = 0;
 	this->dictionary_id = 0;
 	this->president_id = 0;
+	this->round_number = 0;
 }
 
 Game::Game(int64_t id) : Room(id) {
@@ -21,6 +22,7 @@ Game::Game(int64_t id) : Room(id) {
 	this->n_cards_to_win = 0;
 	this->dictionary_id = 0;
 	this->president_id = 0;
+	this->round_number = 0;
 }
 
 Game::Game( int64_t id, 
@@ -37,6 +39,7 @@ Game::Game( int64_t id,
 	this->n_cards_to_win = 0;
 	this->dictionary_id = 0;
 	this->president_id = 0;
+	this->round_number = 0;
 }
 
 Game::Game( int64_t id, 
@@ -50,7 +53,8 @@ Game::Game( int64_t id,
 			uint8_t n_players, 
 			uint8_t n_cards_to_win, 
 			int64_t dictionary_id, 
-			int64_t president_id) 
+			int64_t president_id,
+			uint8_t round_number) 
 			: Room(id, name, owner_id, active) {
 	this->creator_id = creator_id;
 	this->message_id = message_id;
@@ -60,6 +64,7 @@ Game::Game( int64_t id,
 	this->n_cards_to_win = n_cards_to_win;
 	this->dictionary_id = dictionary_id;
 	this->president_id = president_id;
+	this->round_number = round_number;
 }
 
 Game::~Game() {
@@ -72,13 +77,14 @@ void Game::Load()  {
 		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery(
 			"SELECT rooms.id, rooms.name, rooms.owner_id, rooms.active, "
 				"games.creator_id, games.message_id, games.status, "
-				"games.type, games.n_players, games.n_cards_to_win, games.dictionary_id, games.president_id "
+				"games.type, games.n_players, games.n_cards_to_win, "
+				"games.dictionary_id, games.president_id, games.round_number "
 			"FROM rooms INNER JOIN games ON games.room_id = rooms.id "
 			"WHERE rooms.id = ? "
 		);
 		query->bind(1, id);
 		if (!query->executeStep()) throw NoResultsException();
-		Game game = query->getColumns<Game, 12>();
+		Game game = query->getColumns<Game, 13>();
 
 		this->name = game.name;
 		this->owner_id = game.owner_id;
@@ -91,6 +97,7 @@ void Game::Load()  {
 		this->n_cards_to_win = game.n_cards_to_win;
 		this->dictionary_id = game.dictionary_id;
 		this->president_id = game.president_id;
+		this->round_number = game.round_number;
 	} catch (NoResultsException& e) {
 		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
@@ -114,12 +121,13 @@ void Game::Create() {
 		
 		//Query
 		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery(
-			"INSERT INTO games (room_id, creator_id, message_id, status) VALUES (?, ?, ?, ?)"
+			"INSERT INTO games (room_id, creator_id, message_id, status, creation_date) VALUES (?, ?, ?, ?, ?)"
 		);
 		query->bind(1, id);
 		query->bind(2, creator_id);
 		query->bind(3, message_id);
 		query->bind(4, status);
+		query->bind(5, Util::GetCurrentDatetime());
 		if (!query->exec()) throw NoResultsException();
 	} catch (NoResultsException& e) {
 		throw GameAlreadyExistsException();
@@ -153,6 +161,7 @@ void Game::Delete()  {
 		this->n_cards_to_win = 0;
 		this->dictionary_id = 0;
 		this->president_id = 0;
+		this->round_number = 0;
 	} catch (NoResultsException& e) {
 		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
@@ -173,7 +182,7 @@ void Game::SetCreatorID(int64_t creator_id) {
 		//Set the Room info
 		this->creator_id = creator_id;
 	} catch (NoResultsException& e) {
-		throw RoomNotExistsException();
+		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
 		throw UnexpectedException(e.what());
 	} catch (std::runtime_error& e) {
@@ -192,7 +201,7 @@ void Game::SetMessageID(int64_t message_id) {
 		//Set the Room info
 		this->message_id = message_id;
 	} catch (NoResultsException& e) {
-		throw RoomNotExistsException();
+		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
 		throw UnexpectedException(e.what());
 	} catch (std::runtime_error& e) {
@@ -211,7 +220,7 @@ void Game::SetStatus(GameStatusEnum status) {
 		//Set the Room info
 		this->status = status;
 	} catch (NoResultsException& e) {
-		throw RoomNotExistsException();
+		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
 		throw UnexpectedException(e.what());
 	} catch (std::runtime_error& e) {
@@ -230,7 +239,7 @@ void Game::SetType(GameTypeEnum type) {
 		//Set the Room info
 		this->type = type;
 	} catch (NoResultsException& e) {
-		throw RoomNotExistsException();
+		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
 		throw UnexpectedException(e.what());
 	} catch (std::runtime_error& e) {
@@ -249,7 +258,7 @@ void Game::SetNumberOfPlayers(uint8_t n_players) {
 		//Set the Room info
 		this->n_players = n_players;
 	} catch (NoResultsException& e) {
-		throw RoomNotExistsException();
+		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
 		throw UnexpectedException(e.what());
 	} catch (std::runtime_error& e) {
@@ -268,7 +277,7 @@ void Game::SetNumberOfCardsToWin(uint8_t n_cards_to_win) {
 		//Set the Room info
 		this->n_cards_to_win = n_cards_to_win;
 	} catch (NoResultsException& e) {
-		throw RoomNotExistsException();
+		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
 		throw UnexpectedException(e.what());
 	} catch (std::runtime_error& e) {
@@ -289,7 +298,7 @@ void Game::SetDictionaryID(int64_t dictionary_id) {
 		//Set the Room info
 		this->dictionary_id = dictionary_id;
 	} catch (NoResultsException& e) {
-		throw RoomNotExistsException();
+		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
 		throw UnexpectedException(e.what());
 	} catch (std::runtime_error& e) {
@@ -308,7 +317,26 @@ void Game::SetPresidentID(int64_t president_id) {
 		//Set the Room info
 		this->president_id = president_id;
 	} catch (NoResultsException& e) {
-		throw RoomNotExistsException();
+		throw GameNotExistsException();
+	} catch (SQLite::Exception& e) {
+		throw UnexpectedException(e.what());
+	} catch (std::runtime_error& e) {
+		throw UnexpectedException(e.what());
+	}
+}
+
+void Game::SetRoundNumber(uint8_t round_number) {
+	try {
+		//Query
+		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("UPDATE games SET round_number=? WHERE room_id=?");
+		query->bind(1, round_number);
+		query->bind(2, this->id);
+		if (!query->exec()) throw NoResultsException();
+
+		//Set the Room info
+		this->round_number = round_number;
+	} catch (NoResultsException& e) {
+		throw GameNotExistsException();
 	} catch (SQLite::Exception& e) {
 		throw UnexpectedException(e.what());
 	} catch (std::runtime_error& e) {

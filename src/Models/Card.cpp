@@ -57,10 +57,11 @@ void Card::Load() {
 void Card::Create() {
 	try {
 		//Query
-		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("INSERT INTO cards (type, text, dictionary_id) VALUES (?, ?, ?)");
+		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("INSERT INTO cards (type, text, dictionary_id, creation_date) VALUES (?, ?, ?, ?)");
 		query->bind(1, type);
 		query->bind(2, text);
 		query->bind(3, dictionary_id);
+		query->bind(4, Util::GetCurrentDatetime());
 		if (!query->exec()) throw NoResultsException();
 
 		this->id = Db::Instance()->GetLastInsertedRowId();

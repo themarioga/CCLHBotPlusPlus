@@ -60,9 +60,10 @@ void User::Load() {
 void User::Create() {
 	try {
 		//Query
-		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("INSERT INTO users (id, name) VALUES (?, ?)");
+		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("INSERT INTO users (id, name, register_date) VALUES (?, ?, ?)");
 		query->bind(1, id);
 		query->bind(2, name);
+		query->bind(3, Util::GetCurrentDatetime());
 		if (!query->exec()) throw NoResultsException();
 	} catch (NoResultsException& e) {
 		throw UserAlreadyExistsException();

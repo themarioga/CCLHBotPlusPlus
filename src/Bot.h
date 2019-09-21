@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <functional>
 #include <tgbot/tgbot.h>
 
@@ -44,6 +45,7 @@ class Bot {
 		//Game methods
 		void StartRound(Game&);
 		void DeleteGame(User&, Game&);
+		void GetDictionaries(int8_t, Game&);
 
 		//Telegram methods
 		void AddCallbackQueryListener(std::string, std::function<void(std::vector<std::string>, TgBot::CallbackQuery::Ptr)>);

@@ -22,7 +22,7 @@ class Game : public Room {
 		Game(int64_t, std::string, int64_t, int64_t, int64_t);
 		
 		//Autofill constructor
-		Game(int64_t, std::string, int64_t, uint8_t, int64_t, int64_t, uint8_t, uint8_t, uint8_t, uint8_t, int64_t, int64_t);
+		Game(int64_t, std::string, int64_t, uint8_t, int64_t, int64_t, uint8_t, uint8_t, uint8_t, uint8_t, int64_t, int64_t, uint8_t);
 
 		//Destructor
 		~Game();
@@ -41,6 +41,7 @@ class Game : public Room {
 		void SetNumberOfCardsToWin(uint8_t);
 		void SetDictionaryID(int64_t);
 		void SetPresidentID(int64_t);
+		void SetRoundNumber(uint8_t);
 
 		//Getters
 		int64_t GetCreatorID() { return creator_id; }
@@ -51,6 +52,7 @@ class Game : public Room {
 		uint8_t GetNumberOfCardsToWin() { return n_cards_to_win; }
 		int64_t GetDictionaryID() { return dictionary_id; }
 		int64_t GetPresidentID() { return president_id; }
+		uint8_t GetRoundNumber() { return round_number; }
 
 	private:
 		int64_t creator_id;
@@ -61,5 +63,6 @@ class Game : public Room {
 		uint8_t n_cards_to_win;
 		int64_t dictionary_id;
 		int64_t president_id;
+		uint8_t round_number;
 
 };

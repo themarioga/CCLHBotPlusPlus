@@ -81,34 +81,7 @@ void GameLogic::SetGameType(User &user, Game &game, std::string type, std::funct
 	}
 }
 
-void GameLogic::SetGameNumberOfPlayers(User &user, Game &game, int8_t numberOfPlayers, std::function<void()> successCallback, std::function<void(std::string)> failureCallback) {
-	try {
-		//Load game
-		game.Load();
-
-		//And check if the user who sends this query is the creator of the game
-		if (user.GetID() != game.GetCreatorID()) throw PlayerNotEnoughPermissionsException();
-
-		//Check if this query has already been done
-		if (game.GetNumberOfPlayers() != 0) return;
-
-		//Set the type to game
-		game.SetNumberOfPlayers(numberOfPlayers);
-		
-		//If success
-		successCallback();
-	} catch (ApplicationException& e) {
-		failureCallback(e.what());
-	} catch (UnexpectedException& e) {
-		failureCallback(e.what());
-		std::cerr << "Error: " << e.what() << std::endl;
-	} catch (std::runtime_error& e) {
-		failureCallback(e.what());
-		std::cerr << "Error: " << e.what() << std::endl;
-	}
-}
-
-void GameLogic::SetGameNumberOfCardsToWin(User &user, Game &game, int8_t numberOfCardsToWin, std::function<void(std::vector<Dictionary>&)> successCallback, std::function<void(std::string)> failureCallback) {
+void GameLogic::SetGameNumberOfCardsToWin(User &user, Game &game, int8_t numberOfCardsToWin, std::function<void()> successCallback, std::function<void(std::string)> failureCallback) {
 	try {
 		//Load game
 		game.Load();
@@ -122,11 +95,8 @@ void GameLogic::SetGameNumberOfCardsToWin(User &user, Game &game, int8_t numberO
 		//Set the type to game
 		game.SetNumberOfCardsToWin(numberOfCardsToWin);
 		
-		//Get dictionaries
-		std::vector<Dictionary> dictionaries = dictionaryService.GetAllActiveDictionaries();
-		
 		//If success
-		successCallback(dictionaries);
+		successCallback();
 	} catch (ApplicationException& e) {
 		failureCallback(e.what());
 	} catch (UnexpectedException& e) {
@@ -182,10 +152,13 @@ void GameLogic::StartGame(User &user, Game &game, std::function<void()> successC
 
 		//Check the number of players in the game
 		std::vector<Player> players = playerService.GetPlayersInGame(game.GetID()); 
-		if (players.size() < game.GetNumberOfPlayers()) throw GameNotFilledException();
+		if (players.size() < std::stoi(configurationService.GetConfiguration("game_min_number_of_players"))) throw GameNotFilledException();
 		
 		//Change game status
 		game.SetStatus(GameStatusEnum::GAME_STARTED);
+
+		//Set game number of players
+		game.SetNumberOfPlayers(players.size());
 
 		//Calculate quantities
 		const int32_t numberOfBlackCards = game.GetNumberOfCardsToWin() * game.GetNumberOfPlayers();
@@ -216,10 +189,13 @@ void GameLogic::StartGame(User &user, Game &game, std::function<void()> successC
 	}
 }
 
-void GameLogic::StartGameRound(Game &game, int64_t blackCardMessageID, std::function<void(Card, std::map< int64_t, std::vector<Card> >)> successCallback, std::function<void(std::string)> failureCallback) {
+void GameLogic::StartGameRound(Game &game, int64_t blackCardMessageID, std::function<void(Card&, std::map< int64_t, std::vector<Card> >&)> successCallback, std::function<void(std::string)> failureCallback) {
 	try {
 		//Load game
 		game.Load();
+
+		//Increase round number
+		game.SetRoundNumber(game.GetRoundNumber() + 1);
 
 		//Get a black card for the current round
 		Card roundBlackCard = cardService.GetFirstBlackCardFromGameDeck(game.GetID());
@@ -273,13 +249,13 @@ void GameLogic::StartGameRound(Game &game, int64_t blackCardMessageID, std::func
 	}
 }
 
-void GameLogic::EndGameRound(Game &game, Card &card, std::function<void(Card &card, Player &player, std::vector<RoundWhiteCard> &roundWhiteCards)> successCallback, std::function<void(std::string)> failureCallback) {
+void GameLogic::EndGameRound(Game &game, Card &card, std::function<void(Card&, Player&, std::vector<RoundWhiteCard>&, std::vector<Player>&)> successCallback, std::function<void(std::string)> failureCallback) {
 	try {
 		//Get the most voted card
 		Card mostVotedCard = cardService.GetMostVotedCardAtCurrentRound(game.GetID());
 		
 		//Find the propietary of the most voted card
-		Player mostVotedPlayer = cardService.GetPlayerFromRoundWhiteCardID(card.GetID());
+		Player mostVotedPlayer = cardService.GetPlayerFromRoundWhiteCardID(mostVotedCard.GetID());
 
 		//Get most voted player points
 		int8_t pointsAfterWin = mostVotedPlayer.GetPoints() + 1;
@@ -298,9 +274,12 @@ void GameLogic::EndGameRound(Game &game, Card &card, std::function<void(Card &ca
 
 		//Delete the used black card
 		cardService.DeleteBlackCardFromCurrentRound(game.GetID());
+		
+		//Get players
+		std::vector<Player> players = playerService.GetPlayersInGame(game.GetID());
 
 		//If success
-		successCallback(mostVotedCard, mostVotedPlayer, votes);
+		successCallback(mostVotedCard, mostVotedPlayer, votes, players);
 	} catch (ApplicationException& e) {
 		failureCallback(e.what());
 	} catch (UnexpectedException& e) {
@@ -312,7 +291,7 @@ void GameLogic::EndGameRound(Game &game, Card &card, std::function<void(Card &ca
 	}
 }
 
-void GameLogic::DeleteGame(User &user, Game &game, std::function<void(std::vector< std::pair<int64_t, int64_t> >)> successCallback, std::function<void(std::string)> failureCallback) {
+void GameLogic::DeleteGame(User &user, Game &game, std::function<void(std::vector< std::pair<int64_t, int64_t> >&)> successCallback, std::function<void(std::string)> failureCallback) {
 	try {
 		//Create return vector
 		std::vector< std::pair<int64_t, int64_t> > messageIDs;
@@ -394,7 +373,7 @@ void GameLogic::CreatePlayer(Player &player, Game &game, std::function<void()> s
 void GameLogic::CreatePlayerWithChecks(Player &player, Game &game, std::function<void(std::vector<Player>&)> successCallback, std::function<void(std::string)> failureCallback) {
 	try {
 		//Check user
-		User user(player.GetID());
+		User user(player.GetID(), player.GetName());
 		user.Load();
 
 		//Load game
@@ -406,7 +385,7 @@ void GameLogic::CreatePlayerWithChecks(Player &player, Game &game, std::function
 
 		//Check the number of players in the game
 		std::vector<Player> playersInGame = playerService.GetPlayersInGame(game.GetID()); 
-		if (playersInGame.size() == game.GetNumberOfPlayers()) throw GameAlreadyFilledException();
+		if (playersInGame.size() == std::stoi(configurationService.GetConfiguration("game_max_number_of_players"))) throw GameAlreadyFilledException();
 
 		//Create player for this game
 		player.Create();
@@ -504,6 +483,27 @@ void GameLogic::VoteWhiteCard(Player &player, Card &card, int64_t messageID, std
 			
 		//If success
 		successCallback(game, players, roundBlackCard);
+	} catch (ApplicationException& e) {
+		failureCallback(e.what());
+	} catch (UnexpectedException& e) {
+		failureCallback(e.what());
+		std::cerr << "Error: " << e.what() << std::endl;
+	} catch (std::runtime_error& e) {
+		failureCallback(e.what());
+		std::cerr << "Error: " << e.what() << std::endl;
+	}
+}
+
+void GameLogic::GetDictionaries(int8_t offset, std::function<void(int64_t, std::vector<Dictionary>&)> successCallback, std::function<void(std::string)> failureCallback) {
+	try {
+		//Get dictionary count
+		int64_t count = dictionaryService.GetActiveDictionariesCount();
+		
+		//Get dictionaries
+		std::vector<Dictionary> dictionaries = dictionaryService.GetAllDictionaries(1, std::stoi(configurationService.GetConfiguration("dictionaries_per_page")), offset);
+			
+		//If success
+		successCallback(count, dictionaries);
 	} catch (ApplicationException& e) {
 		failureCallback(e.what());
 	} catch (UnexpectedException& e) {

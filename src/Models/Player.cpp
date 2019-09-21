@@ -66,12 +66,13 @@ void Player::Create() {
 	try {
 		//Query
 		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery(
-			"INSERT INTO players (user_id, game_id, message_id, join_order) VALUES (?, ?, ?, ?)"
+			"INSERT INTO players (user_id, game_id, message_id, join_order, join_date) VALUES (?, ?, ?, ?, ?)"
 		);
 		query->bind(1, id);
 		query->bind(2, game_id);
 		query->bind(3, message_id);
 		query->bind(4, join_order);
+		query->bind(5, Util::GetCurrentDatetime());
 		if (!query->exec()) throw NoResultsException();
 	} catch (NoResultsException& e) {
 		throw PlayerAlreadyExistsException();

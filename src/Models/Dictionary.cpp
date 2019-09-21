@@ -62,10 +62,11 @@ void Dictionary::Load() {
 void Dictionary::Create() {
 	try {
 		//Query
-		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("INSERT INTO dictionaries (name, creator_id, message_id) VALUES (?, ?, ?)");
+		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("INSERT INTO dictionaries (name, creator_id, message_id, creation_date) VALUES (?, ?, ?, ?)");
 		query->bind(1, name);
 		query->bind(2, creator_id);
 		query->bind(3, message_id);
+		query->bind(4, Util::GetCurrentDatetime());
 		if (!query->exec()) throw NoResultsException();
 
 		this->id = Db::Instance()->GetLastInsertedRowId();

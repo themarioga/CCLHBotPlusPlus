@@ -1,4 +1,25 @@
--- v0.1 - First version of database
+-- v0.10.0_1 - First version of database
+
+--Bot config
+
+DROP TABLE IF EXISTS configurations;
+CREATE TABLE IF NOT EXISTS configurations (
+	conf_key		TEXT		NOT NULL,
+	conf_value		TEXT		NOT NULL,
+	PRIMARY KEY (conf_key)
+);
+
+INSERT INTO configurations VALUES 
+('bot_token', ''),
+('bot_name', 'Cartas contra la humanidad'),
+('bot_alias', '@cclhbot'),
+('bot_version', '0.10.0'),
+('bot_owner_id', ''),
+('bot_owner_alias', '@themarioga'),
+('bot_query_separator', '_')
+('game_whitecards_in_hand', '5'),
+('dictionaries_min_whitecards', '405'),
+('dictionaries_min_blackcards', '50'),;
 
 -- Basic tables
 

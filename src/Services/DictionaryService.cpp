@@ -9,18 +9,12 @@ DictionaryService::~DictionaryService() {
 
 }
 
-std::vector<Dictionary> DictionaryService::GetAllDictionaries() {
+int64_t DictionaryService::GetActiveDictionariesCount() {
 	try {
-		std::vector<Dictionary> dictionaries;
+		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("SELECT COUNT(*) FROM dictionaries WHERE published = 1");
+		query->executeStep();
 
-		//Query
-		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("SELECT id, name, creator_id, message_id, published FROM dictionaries");
-		while (query->executeStep()) {
-			Dictionary dictionary = query->getColumns<Dictionary, 5>();
-			dictionaries.push_back(dictionary);
-		}
-		
-		return dictionaries;
+		return query->getColumn(0);
 	} catch (SQLite::Exception& e) {
 		throw UnexpectedException(e.what());
 	} catch (std::runtime_error& e) {
@@ -28,12 +22,18 @@ std::vector<Dictionary> DictionaryService::GetAllDictionaries() {
 	}
 }
 
-std::vector<Dictionary> DictionaryService::GetAllActiveDictionaries() {
+std::vector<Dictionary> DictionaryService::GetAllDictionaries(int8_t published, int8_t limit, int8_t offset) {
 	try {
 		std::vector<Dictionary> dictionaries;
 
 		//Query
-		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("SELECT id, name, creator_id, message_id, published FROM dictionaries WHERE published = 1");
+		std::string sql = 
+			"SELECT id, name, creator_id, message_id, published "
+			"FROM dictionaries";
+		if (published != -1) sql += " WHERE published = "+std::to_string(published);
+		if (limit != 0) sql += " LIMIT "+std::to_string(limit)+" OFFSET "+std::to_string(offset);
+
+		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery(sql);
 		while (query->executeStep()) {
 			Dictionary dictionary = query->getColumns<Dictionary, 5>();
 			dictionaries.push_back(dictionary);

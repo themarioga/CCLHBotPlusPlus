@@ -41,19 +41,17 @@ class GameLogic {
 
 		void SetGameType(User&, Game&, std::string, std::function<void()>, std::function<void(std::string)>);
 
-		void SetGameNumberOfPlayers(User&, Game&, int8_t, std::function<void()>, std::function<void(std::string)>);
-
-		void SetGameNumberOfCardsToWin(User&, Game&, int8_t, std::function<void(std::vector<Dictionary>&)>, std::function<void(std::string)>);
+		void SetGameNumberOfCardsToWin(User&, Game&, int8_t, std::function<void()>, std::function<void(std::string)>);
 
 		void SetGameDictionary(User&, Game&, Dictionary&, std::function<void()>, std::function<void(std::string)>);
 
 		void StartGame(User&, Game&, std::function<void()>, std::function<void(std::string)>);
 
-		void StartGameRound(Game&, int64_t, std::function<void(Card, std::map< int64_t, std::vector<Card> >)>, std::function<void(std::string)>);
+		void StartGameRound(Game&, int64_t, std::function<void(Card&, std::map< int64_t, std::vector<Card> >&)>, std::function<void(std::string)>);
 
-		void EndGameRound(Game&, Card&, std::function<void(Card&, Player&, std::vector<RoundWhiteCard>&)>, std::function<void(std::string)>);
+		void EndGameRound(Game&, Card&, std::function<void(Card&, Player&, std::vector<RoundWhiteCard>&, std::vector<Player>&)>, std::function<void(std::string)>);
 
-		void DeleteGame(User&, Game&, std::function<void(std::vector< std::pair<int64_t, int64_t> >)>, std::function<void(std::string)>);
+		void DeleteGame(User&, Game&, std::function<void(std::vector< std::pair<int64_t, int64_t> >&)>, std::function<void(std::string)>);
 
 		void VoteToDeleteGame(User&, Game&, std::function<void(int8_t)>, std::function<void(std::string)>);
 
@@ -66,6 +64,9 @@ class GameLogic {
 		void SelectWhiteCard(Player&, Card&, int64_t, std::function<void(Game&, std::vector<Player>&, RoundBlackCard&, std::vector<RoundWhiteCard>&)>, std::function<void(std::string)>);
 		
 		void VoteWhiteCard(Player&, Card&, int64_t, std::function<void(Game&, std::vector<Player>&, RoundBlackCard&)>, std::function<void(std::string)>);
+
+
+		void GetDictionaries(int8_t, std::function<void(int64_t, std::vector<Dictionary>&)>, std::function<void(std::string)>);
 
 	private:
 

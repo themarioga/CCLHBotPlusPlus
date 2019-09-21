@@ -3,6 +3,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <chrono>
+#include <ctime> 
+#include <random>
 
 class Util {
 	public:
@@ -51,5 +54,18 @@ class Util {
 			}
 
 			return main_string;
+		}
+
+		static std::string GetCurrentDatetime() {
+			std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+			return std::ctime(&time);
+		}
+
+		static int64_t GetRandomNumber(int64_t min, int64_t max) {
+			std::srand(std::time(nullptr)); // use current time as seed for random generator
+    		int random_variable = std::rand();
+
+			return (random_variable % max) + min;
 		}
 };

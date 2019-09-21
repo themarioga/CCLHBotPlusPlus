@@ -151,8 +151,6 @@ void CardService::AddWhiteCardToCurrentRound(int64_t player_id, int64_t game_id,
 		query->bind(4, message_id);
 
 		if (!query->exec()) throw NoResultsException();
-	} catch (CardNotExistsException& e) {
-		throw CardNotExistsException();
 	} catch (NoResultsException& e) {
 		throw CardAlreadyUsedException();
 	} catch (SQLite::Exception& e) {
@@ -219,8 +217,6 @@ void CardService::AddVoteToCurrentRound(int64_t game_id, int64_t player_id, int6
 		query->bind(4, message_id);
 
 		if (!query->exec()) throw NoResultsException();
-	} catch (CardNotExistsException& e) {
-		throw CardNotExistsException();
 	} catch (NoResultsException& e) {
 		throw CardAlreadyUsedException();
 	} catch (SQLite::Exception& e) {
@@ -426,8 +422,6 @@ void CardService::AddBlackCardToCurrentRound(int64_t game_id, int64_t card_id, i
 		query->bind(3, message_id);
 
 		if (!query->exec()) throw NoResultsException();
-	} catch (CardNotExistsException& e) {
-		throw CardNotExistsException();
 	} catch (NoResultsException& e) {
 		throw CardAlreadyUsedException();
 	} catch (SQLite::Exception& e) {

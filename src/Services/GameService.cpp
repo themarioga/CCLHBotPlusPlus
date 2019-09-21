@@ -75,11 +75,12 @@ std::vector<Game> GameService::GetAllGames() {
 		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery(
 			"SELECT rooms.id, rooms.name, rooms.owner_id, rooms.active, "
 				"games.creator_id, games.message_id, games.status, "
-				"games.type, games.n_players, games.n_cards_to_win, games.dictionary_id, games.president_id "
+				"games.type, games.n_players, games.n_cards_to_win, "
+				"games.dictionary_id, games.president_id, games.round_number "
 			"FROM rooms INNER JOIN games ON games.room_id = rooms.id"
 		);
 		while (query->executeStep()) {
-			Game game = query->getColumns<Game, 12>();
+			Game game = query->getColumns<Game, 13>();
 			games.push_back(game);
 		}
 	

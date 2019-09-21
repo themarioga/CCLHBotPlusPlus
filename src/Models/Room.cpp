@@ -66,10 +66,11 @@ void Room::Load() {
 void Room::Create() {
 	try {
 		//Query
-		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("INSERT INTO rooms (id, name, owner_id) VALUES (?, ?, ?)");
+		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("INSERT INTO rooms (id, name, owner_id, register_date) VALUES (?, ?, ?, ?)");
 		query->bind(1, id);
 		query->bind(2, name);
 		query->bind(3, owner_id);
+		query->bind(4, Util::GetCurrentDatetime());
 		if (!query->exec()) throw NoResultsException();
 	} catch (NoResultsException& e) {
 		throw RoomAlreadyExistsException();
