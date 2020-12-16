@@ -20,25 +20,25 @@ BUILD_PATH = ./obj
 # Paths for the .cpp files
 SOURCE_PATHS = ./src
 # Paths for the includes
-INCLUDE_PATHS = /usr/include /usr/local/include /usr/include/tgbot /usr/include/jsoncpp /usr/local/include/CCLHBotCommons
+INCLUDE_PATHS = /usr/local/include /usr/include/tgbot /usr/include/jsoncpp /usr/local/include/CCLHBotCommons /usr/include
 # Paths for the libs
-LIB_PATHS = /usr/lib /usr/local/lib
+LIB_PATHS = /usr/local/lib /usr/lib
 
 ####
 # FLAGS
 ####
 # C flags
-CFLAGS = -g -O3 -m64 -ffast-math
+CFLAGS = -g -O3 -m64 -ffast-math -fsanitize=address
 # Warning flags
 CFLAGS += -Wall
 # Preprocesor flags
-CFLAGS += 
+CFLAGS += $(USER_CFLAGS)
 # C++ flags
 CPPFLAGS = -std=c++14
 # Linker flags
-LDFLAGS = 
+LDFLAGS = -fsanitize=address
 # Libraries
-LIBS = -lCCLHBotCommons -lsqlite3 -lSQLiteCpp -lTgBot -lboost_system -lssl -lcrypto  -lpthread
+LIBS = -lCCLHBotCommons -lSQLiteCpp -lsqlite3 -lTgBot -lboost_system -lssl -lcrypto  -lpthread
 
 ######## DON'T EDIT ANYTHING BELOW THIS LINE
 EXECUTABLE := $(BIN_PATH)/$(TARGET)

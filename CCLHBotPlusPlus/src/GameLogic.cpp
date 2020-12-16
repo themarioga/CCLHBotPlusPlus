@@ -331,6 +331,9 @@ void GameLogic::DeleteGame(User &user, Game &game, std::function<void(std::vecto
 
 void GameLogic::DeleteGameByCreator(User &user, Game &game, std::function<void(std::vector< std::pair<int64_t, int64_t> >&)> successCallback, std::function<void(std::string)> failureCallback) {
 	try {
+		//Load the user
+		user.Load();
+
 		//Load game
 		game = GameService::GetGameByCreatorID(user.GetID());
 
@@ -363,6 +366,34 @@ void GameLogic::VoteToDeleteGame(User &user, Game &game, std::function<void(int8
 
 		//If success
 		successCallback(GameService::GetVoteDeletePlayerCount(game.GetID()));
+	} catch (ApplicationException& e) {
+		failureCallback(e.what());
+	} catch (UnexpectedException& e) {
+		failureCallback(e.what());
+		std::cerr << "Error: " << e.what() << std::endl;
+	} catch (std::runtime_error& e) {
+		failureCallback(e.what());
+		std::cerr << "Error: " << e.what() << std::endl;
+	}
+}
+
+void GameLogic::LeaveGame(User &user, Game &game, std::function<void()> successCallback, std::function<void(std::string)> failureCallback) {
+	try {
+		//Check user
+		user.Load();
+
+		//Load game
+		game.Load();
+
+		//Load player
+		Player player(user.GetID());
+		player.Load();
+
+		//Leave game
+		player.Delete();
+
+		//If success
+		successCallback();
 	} catch (ApplicationException& e) {
 		failureCallback(e.what());
 	} catch (UnexpectedException& e) {
@@ -572,23 +603,39 @@ void GameLogic::DeleteAllGameReferences(Game &game) {
 }
 
 std::vector< std::pair<int64_t, int64_t> > GameLogic::GetMessageIDsFromGame(Game &game) {
-		//Create return vector
-		std::vector< std::pair<int64_t, int64_t> > messageIDs;
+	//Create return vector
+	std::vector< std::pair<int64_t, int64_t> > messageIDs;
 
-		//Add game's message
-		messageIDs.push_back(std::pair<int64_t, int64_t>(game.GetID(), game.GetMessageID()));
-		
-		//Get all the players in the game
-		std::vector<Player> players = PlayerService::GetPlayersInGame(game.GetID());
+	//Add game's message
+	messageIDs.push_back(std::pair<int64_t, int64_t>(game.GetID(), game.GetMessageID()));
 
-		//Add all player's mesages
-		for (Player player : players) {
-			messageIDs.push_back(std::pair<int64_t, int64_t>(player.GetID(), player.GetMessageID()));
-		}
+	//Get the black cards
+	RoundBlackCard blackcard = CardService::GetBlackCardFromCurrentRound(game.GetID());
+	messageIDs.push_back(std::pair<int64_t, int64_t>(blackcard.game_id, blackcard.message_id));
+	
+	//Get all the players in the game
+	std::vector<Player> players = PlayerService::GetPlayersInGame(game.GetID());
 
-		//ToDo: añadir a messageIDs los mensajes de las cartas y demás
+	//Add all player's mesages
+	for (Player player : players) {
+		messageIDs.push_back(std::pair<int64_t, int64_t>(player.GetID(), player.GetMessageID()));
+	}
 
-		return messageIDs;
+	//Get the white cards
+	std::vector<RoundWhiteCard> whitecards = CardService::GetWhiteCardsFromCurrentRound(game.GetID());
+
+	for (RoundWhiteCard card : whitecards) {
+		messageIDs.push_back(std::pair<int64_t, int64_t>(card.player_id, card.message_id));
+	}
+
+	//Get the votes
+	std::vector<RoundWhiteCard> votes = CardService::GetVotesFromCurrentRound(game.GetID());
+
+	for (RoundWhiteCard vote : votes) {
+		messageIDs.push_back(std::pair<int64_t, int64_t>(vote.player_id, vote.message_id));
+	}
+
+	return messageIDs;
 }
 
 std::string GameLogic::GetPlayerNamesFromPlayerArray(std::vector<Player>& players, std::string pre, std::string post) {

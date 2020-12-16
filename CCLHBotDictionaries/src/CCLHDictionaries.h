@@ -19,7 +19,7 @@ class CCLHDictionaries {
 		CCLHDictionaries();
 		~CCLHDictionaries();
 		
-		void Listen();
+		void Listen(bool webhooks);
 
 	private:
 

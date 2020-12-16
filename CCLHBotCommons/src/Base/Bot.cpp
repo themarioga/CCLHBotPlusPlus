@@ -11,7 +11,7 @@ Bot::~Bot() {
 	delete bot;
 }
 
-void Bot::Listen() {
+void Bot::ListenLongPoll() {
 	while (true) {
 		try {
 			std::clog << "Iniciando bot con username: " << bot->getApi().getMe()->username.c_str() << std::endl;
@@ -28,6 +28,29 @@ void Bot::Listen() {
 			}
 		} catch (std::runtime_error& e) {
 			std::cerr << "["+Util::GetCurrentDatetime()+"] Error (longPoll): " << e.what() << std::endl;
+		}
+	}
+}
+
+void Bot::ListenWebHook(std::string webhookURL, int port) {
+	while (true) {
+		try {
+			std::clog << "Iniciando bot con username: " << bot->getApi().getMe()->username.c_str() << std::endl;
+
+			TgBot::TgWebhookTcpServer webhook(port, *bot);
+			bot->getApi().setWebhook(webhookURL);
+
+			std::clog << "Escuchando peticiones webhook desde " << webhookURL << " en el puerto " << port << std::endl;
+			while (true) {
+				try {
+					webhook.start();
+				} catch (std::runtime_error& e) {
+					std::cerr << "["+Util::GetCurrentDatetime()+"] Error (listen): " << e.what() << std::endl;
+					return;
+				}
+			}
+		} catch (std::runtime_error& e) {
+			std::cerr << "["+Util::GetCurrentDatetime()+"] Error (webhook): " << e.what() << std::endl;
 		}
 	}
 }

@@ -8,7 +8,7 @@ class CCLH {
         CCLH();
         ~CCLH();
 
-        void Listen();
+        void Listen(bool webhooks);
 
     private:
         Bot *bot;

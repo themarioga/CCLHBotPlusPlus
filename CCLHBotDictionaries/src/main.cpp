@@ -11,6 +11,10 @@ int main(int argc, char* argv[]) {
 	std::ifstream sql_file(argv[1], std::ifstream::binary);
 	Util::AssertTrue(sql_file.good(), "No se ha encontrado el archivo especificado.");
 
+	//Check if we want webhooks
+	bool webhooks = false;
+	if (argc == 3 && strcmp(argv[2], "true") == 0) webhooks = true;
+
 	//Start Db
 	Db::Instance()->Connect(argv[1]);
 
@@ -18,7 +22,7 @@ int main(int argc, char* argv[]) {
 	CCLHDictionaries cclhdictionaries;
 	
 	//Loop
-	cclhdictionaries.Listen();
+	cclhdictionaries.Listen(webhooks);
 
 	return 0;
 }

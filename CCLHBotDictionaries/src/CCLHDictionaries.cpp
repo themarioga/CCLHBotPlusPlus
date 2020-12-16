@@ -25,8 +25,15 @@ CCLHDictionaries::~CCLHDictionaries() {
 	delete bot;
 }
 
-void CCLHDictionaries::Listen() {
-	bot->Listen();
+void CCLHDictionaries::Listen(bool webhooks) {
+	if (webhooks) {
+		bot->ListenWebHook(
+			ConfigurationService::GetInstance()->GetConfiguration("dictionaries_bot_webhook_url"),
+			std::stoi(ConfigurationService::GetInstance()->GetConfiguration("dictionaries_bot_webhook_port"))
+		);
+	} else {
+    	bot->ListenLongPoll();
+	}
 }
 
 void CCLHDictionaries::SetUpCommands() {

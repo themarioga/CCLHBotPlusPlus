@@ -54,6 +54,8 @@ class GameLogic {
 
 		static void DeleteGameByCreator(User&, Game&, std::function<void(std::vector< std::pair<int64_t, int64_t> >&)>, std::function<void(std::string)>);
 
+		static void LeaveGame(User&, Game&, std::function<void()>, std::function<void(std::string)>);
+
 
 		static void CreatePlayer(Player&, Game&, std::function<void()>, std::function<void(std::string)>);
 

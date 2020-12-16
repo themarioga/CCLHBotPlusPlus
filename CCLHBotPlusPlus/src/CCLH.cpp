@@ -2,7 +2,7 @@
 
 CCLH::CCLH() {
 	//Init Bot
-	bot = new Bot(ConfigurationService::GetInstance()->GetConfiguration("bot_token"), ConfigurationService::GetInstance()->GetConfiguration("bot_query_separator"));
+	bot = new Bot(ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_token"), ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_query_separator"));
 
 	//Start listening for queries
 	bot->StartQueryListener();
@@ -16,8 +16,15 @@ CCLH::~CCLH() {
 	delete bot;
 }
 
-void CCLH::Listen() {
-    bot->Listen();
+void CCLH::Listen(bool webhooks) {
+	if (webhooks) {
+		bot->ListenWebHook(
+			ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_webhook_url"),
+			std::stoi(ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_webhook_port"))
+		);
+	} else {
+    	bot->ListenLongPoll();
+	}
 }
 
 void CCLH::SetUpCommands() {
@@ -99,25 +106,48 @@ void CCLH::SetUpCommands() {
 				bot->sendMessage(message->chat->id, Bot::GetUsername(message->from)+": "+errorMessage);
 			});
 	});
+    bot->AddCommandListener("deletegame", [this](TgBot::Message::Ptr message) {
+		//Check if we receive the command in private
+		if (message->chat->type != TgBot::Chat::Type::Private) {
+			bot->sendMessage(message->chat->id, Bot::GetUsername(message->from)+": Por favor envia este comando por privado.");
+			return;
+		}
+
+		//Create user object
+		User user(message->from->id, Bot::GetUsername(message->from));
+		Game game;
+
+		//Delete the game
+		GameLogic::DeleteGameByCreator(user, game, 
+			[&](std::vector< std::pair<int64_t, int64_t> > messageList){ //Success
+				bot->sendMessage(message->from->id, "Partida borrada en la sala: "+game.GetName());
+				for (std::pair<int64_t, int64_t> messagePair : messageList) {
+					//Edit previous message
+					bot->editMessage(messagePair.first, messagePair.second, "Partida borrada.");
+				}
+			},
+			[&](std::string errorMessage){ //Failure
+				bot->sendMessage(message->from->id, Bot::GetUsername(message->from)+": "+errorMessage);
+			});
+	});
     bot->AddCommandListener("newdictionary", [this](TgBot::Message::Ptr message) {
 		bot->sendMessage(message->chat->id, 
-			"La creacion de diccionarios se traslada al bot @cclhdictionariesbot, el cual estará desactivado unos dias.\n\n"
-			"Lamento las molestias."
+			"La creacion de diccionarios se ha trasladado al bot @cclhdictionariesbot.\n\n"
 		);
 	});
     bot->AddCommandListener("help", [this](TgBot::Message::Ptr message) {
 		bot->sendMessage(message->chat->id, 
-			"Bienvenido a la ayuda de "+ConfigurationService::GetInstance()->GetConfiguration("bot_name")+" versión "+ConfigurationService::GetInstance()->GetConfiguration("bot_version")+".\n"
+			"Bienvenido a la ayuda de "+ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_name")+" versión "+ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_version")+".\n"
 			"Puedes consultar la ayuda en el siguiente enlace: http://telegra.ph/Manual-del-bot-Cartas-Contra-la-Humanidad-cclhbot-01-31\n"
 			"Disfrutad del bot y... ¡A jugar!\n\n"
-			"Creado por "+ConfigurationService::GetInstance()->GetConfiguration("bot_owner_alias")+"."
+			"Creado por "+ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_owner_alias")+"."
 		);
 	});
-    bot->AddCommandListener("sendMessage", [this](TgBot::Message::Ptr message) {
-		if (std::to_string(message->from->id) == ConfigurationService::GetInstance()->GetConfiguration("bot_owner_id")) {
+    bot->AddCommandListener("sendmessage", [this](TgBot::Message::Ptr message) {
+		if (std::to_string(message->from->id) == ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_owner_id")) {
 			//Send message to me
 			std::string msgText = Util::ReplaceAll(message->text, "/sendMessage ", "");
-			bot->sendMessage(std::stol(ConfigurationService::GetInstance()->GetConfiguration("bot_owner_id")), "Enviando texto: "+msgText);
+			bot->sendMessage(std::stol(ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_owner_id")), "Enviando texto: "+msgText);
 			//Send message to all users
 			UserService userService;
 			std::vector<User> users = userService.GetAllUsers();
@@ -131,30 +161,8 @@ void CCLH::SetUpCommands() {
 			}
 		}
 	});
-    bot->AddCommandListener("deleteGame", [this](TgBot::Message::Ptr message) {
-		if (std::to_string(message->from->id) == ConfigurationService::GetInstance()->GetConfiguration("bot_owner_id")) {
-			//Send message to me
-			int64_t userID = std::stoi(Util::ReplaceAll(message->text, "/deleteGame ", ""));
-			
-			bot->sendMessage(message->from->id, "Borrando partida de "+std::to_string(userID));
-
-			User user(userID);
-			Game game;
-			GameLogic::DeleteGameByCreator(user, game, 
-				[&](std::vector< std::pair<int64_t, int64_t> > messageList){ //Success
-					bot->sendMessage(message->from->id, "Partida borrada en la sala: "+game.GetName());
-					for (std::pair<int64_t, int64_t> messagePair : messageList) {
-						//Edit previous message
-						bot->editMessage(messagePair.first, messagePair.second, "Partida borrada.");
-					}
-				},
-				[&](std::string errorMessage){ //Failure
-					bot->sendMessage(message->from->id, Bot::GetUsername(message->from)+": "+errorMessage);
-				});
-		}
-	});
-    bot->AddCommandListener("deleteAllGames", [this](TgBot::Message::Ptr message) {
-		if (std::to_string(message->from->id) == ConfigurationService::GetInstance()->GetConfiguration("bot_owner_id")) {
+    bot->AddCommandListener("deleteallgames", [this](TgBot::Message::Ptr message) {
+		if (std::to_string(message->from->id) == ConfigurationService::GetInstance()->GetConfiguration("cclh_bot_owner_id")) {
 			GameService gameService = GameService();
 			std::vector<Game> games = gameService.GetAllGames();
 			
@@ -446,9 +454,55 @@ void CCLH::SetUpQueries() {
 	});
 
 	bot->AddCallbackQueryListener("leave", [this](std::vector<std::string> parameters, TgBot::CallbackQuery::Ptr query) {
-		bot->answerCallbackQuery(query->id, "Esta caracteristica aun no ha sido implementada");
+		//Check if the query is correct
+		if (parameters.size() != 1) {
+			bot->answerCallbackQuery(query->id, Bot::GetUsername(query->from)+": Comando no válido");
+			return;
+		}
+
+		//Answer the query
+		bot->answerCallbackQuery(query->id, "Abandonando partida...");
+
+		//Create game object
+		Game game(std::stol(parameters[0]));
+
+		//Create player object
+		User user(query->from->id);
 		
-		//ToDo: leave
+		//Call leave process
+		GameLogic::LeaveGame(user, game, [&]() { //Success
+			//Send advice messages
+			bot->editMessage(query->from->id, query->message->messageId, "Has abandonado la partida.");
+			bot->sendMessage(game.GetID(), "El jugador "+user.GetName()+" ha abandonado la partida.");
+
+			//Check the status of the game
+			if (game.GetStatus() == GameStatusEnum::GAME_CREATED || game.GetStatus() == GameStatusEnum::GAME_CONFIGURED) {
+				//Get players
+				std::vector<Player> playersInGame = PlayerService::GetPlayersInGame(game.GetID()); 
+
+				//Create a string with players names and add current player's name
+				std::string playerNames = GameLogic::GetPlayerNamesFromPlayerArray(playersInGame, "", "\n");
+				
+				//Create a markup keyboard
+				TgBot::InlineKeyboardMarkup::Ptr keyboard(new TgBot::InlineKeyboardMarkup);
+				keyboard->inlineKeyboard.push_back(Bot::GetKeyboardRow(std::vector<TgButton> { TgButton("Unirse a la partida", "join_"+std::to_string(game.GetID())) }));
+				keyboard->inlineKeyboard.push_back(Bot::GetKeyboardRow(std::vector<TgButton> { TgButton("Borrar la partida", "delete_"+std::to_string(game.GetID())) }));
+				
+				//Edit previous message
+				bot->editMessage(game.GetID(), game.GetMessageID(),
+					"Invita a otros jugadores a unirse. "
+					"Para ello solo tienen que hacer click en \"Unirse a la partida\".\n"
+					"Cuando todos se hayan unido haced click en \"Iniciar la partida\".\n"
+					"Por ahora se han unido:\n\n"+playerNames, 
+					keyboard);
+			} else {
+				//ToDo: poder abandonar con la partida empezada
+				bot->sendMessage(query->from->id, "Aun no se puede abandonar la partida ya empezada");
+			}
+		},
+		[this, query](std::string errorMessage){ //Failure
+			bot->sendMessage(query->message->chat->id, Bot::GetUsername(query->from)+": "+errorMessage);
+		});
 	});
 
 	bot->AddCallbackQueryListener("card", [this](std::vector<std::string> parameters, TgBot::CallbackQuery::Ptr query) {
@@ -723,8 +777,17 @@ void CCLH::DeleteGame(User &user, Game &game) {
 	GameLogic::DeleteGame(user, game, 
 		[&](std::vector< std::pair<int64_t, int64_t> > messageList){ //Success
 			for (std::pair<int64_t, int64_t> messagePair : messageList) {
-				//Edit previous message
-				bot->editMessage(messagePair.first, messagePair.second, "Partida borrada.");
+				try {
+					//Edit previous message
+					bot->editMessage(messagePair.first, messagePair.second, "Partida borrada.");
+				} catch (std::runtime_error &e) {
+					if (messagePair.first == game.GetID()) {
+						game.SetActive(false);
+					} else {
+						User user(messagePair.first);
+						user.SetActive(false);
+					}
+				}
 			}
 		},
 		[&](std::string errorMessage){ //Failure

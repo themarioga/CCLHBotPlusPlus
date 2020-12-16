@@ -290,7 +290,7 @@ void Game::SetDictionaryID(int64_t dictionary_id) {
 		//Query
 		std::shared_ptr<SQLite::Statement> query = Db::Instance()->CreateQuery("UPDATE games SET dictionary_id=?, status=? WHERE room_id=?");
 		query->bind(1, dictionary_id);
-		//ToDo: I set the status here so I only need one query, but I think I'll have to find a better way
+		//FixMe: I set the status here so I only need one query, but I think I'll have to find a better way
 		query->bind(2, GameStatusEnum::GAME_CONFIGURED);
 		query->bind(3, this->id);
 		if (!query->exec()) throw NoResultsException();

@@ -1,40 +1,44 @@
-# Makefile for CCLHBot
+# Makefile for echobot
 # Created by Mario Gonzalez and Julian Garcia
 
 # C compiler
 CC = clang
 # C++ compiler
 CXX = clang++
-# AR Linker
-AR = ar
+# Debugger
+DBG = lldb
 # Name of the executable created
-TARGET = libCCLHBotCommons.a
+TARGET = echobot
 
 ####
 # PATHS
 ####
 # Path for the executable
-BIN_PATH = ./lib
+BIN_PATH = ./bin
 # Path for the .o files
 BUILD_PATH = ./obj
 # Paths for the .cpp files
 SOURCE_PATHS = ./src
 # Paths for the includes
-INCLUDE_PATHS = /usr/local/include /usr/include/tgbot /usr/include/jsoncpp ./include /usr/include
+INCLUDE_PATHS = /usr/local/include /usr/include/tgbot /usr/include/jsoncpp /usr/local/include/CCLHBotCommons /usr/include 
+# Paths for the libs
+LIB_PATHS = /usr/local/lib /usr/lib
 
 ####
 # FLAGS
 ####
 # C flags
-CFLAGS = -g -O3 -m64 -ffast-math
+CFLAGS = -g -O3 -m64 -ffast-math -fsanitize=address
 # Warning flags
 CFLAGS += -Wall
 # Preprocesor flags
-CFLAGS += 
+CFLAGS += $(USER_CFLAGS)
 # C++ flags
 CPPFLAGS = -std=c++14
 # Linker flags
-ARFLAGS = crf
+LDFLAGS = -fsanitize=address
+# Libraries
+LIBS = -lCCLHBotCommons -lSQLiteCpp -lsqlite3 -lTgBot -lboost_system -lssl -lcrypto -lpthread
 
 ######## DON'T EDIT ANYTHING BELOW THIS LINE
 EXECUTABLE := $(BIN_PATH)/$(TARGET)
@@ -50,6 +54,9 @@ OBJ_FILES := $(foreach FILE,$(SRC_FILES),$(patsubst %.cpp, $(BUILD_PATH)/%.o, $(
 INCLUDE_DIRS := $(foreach DIR,$(INCLUDE_PATHS),$(patsubst %, -I%, $(DIR)))
 CFLAGS += $(INCLUDE_DIRS)
 
+LIBRARY_DIRS := $(foreach DIR,$(LIB_PATHS),$(patsubst %, -L%, $(DIR)))
+LDFLAGS += $(LIBRARY_DIRS)
+
 # MAKE OPTIONS
 .PHONY: all run debug clean cleanfolder
 
@@ -57,7 +64,7 @@ all: $(BUILD_PATH) $(OBJ_FILES)
 	$(info =================================)
 	$(info Creando el ejecutable $(Target)...)
 	$(info =================================)
-	@$(AR) $(ARFLAGS) $(EXECUTABLE) $(OBJ_FILES)
+	@$(CXX) $(OBJ_FILES) -o $(EXECUTABLE) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LIBS)
     
 $(BUILD_PATH)/%.o: %.c
 	$(info Creando el binario para el archivo $<...)
@@ -89,10 +96,14 @@ cleanfolder:
 	@$(RM) $(EXECUTABLE)
 	@$(RM) -r $(BUILD_PATH)/$(FOLDER)
 
-install:
+run: all
 	$(info =================================)
-	$(info Instalando la libreria $(FOLDER)...)
+	$(info Ejecutando...)
 	$(info =================================)
-	@mkdir -p /usr/local/include/CCLHBotCommons/
-	@cp -R include/* /usr/local/include/CCLHBotCommons/
-	@cp -R lib/* /usr/local/lib/
+	@$(EXECUTABLE) start cclh.db
+
+debug: all
+	$(info =================================)
+	$(info Ejecutando...)
+	$(info =================================)
+	@$(DBG) $(EXECUTABLE)

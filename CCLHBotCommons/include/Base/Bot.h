@@ -28,7 +28,8 @@ class Bot {
 		~Bot();
 		
 		void Start();
-		void Listen();
+		void ListenLongPoll();
+		void ListenWebHook(std::string, int);
 
 		void StartMessageListener();
 		void StartQueryListener();
@@ -53,7 +54,7 @@ class Bot {
 
 	private:
 
-		TgBot::Bot *bot;
+		TgBot::Bot *bot = nullptr;
 
 		std::map< std::string, std::function<void(std::vector<std::string>, TgBot::CallbackQuery::Ptr)> > queries;
 		std::map< std::string, std::function<void(TgBot::Message::Ptr)> > replies;
